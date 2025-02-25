@@ -1,0 +1,6 @@
+websockets
+pyserial
+pyserial-asyncio
+customtkinter
+pystray
+pillow
