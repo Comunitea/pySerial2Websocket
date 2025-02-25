@@ -109,15 +109,27 @@ class SerialToWebSocket:
             return f"S{command}\r"
 
     async def main(self):
-        self.serial_reader, self.serial_writer = await serial_asyncio.open_serial_connection(
-            url=self.serial_port, baudrate=self.baud_rate, parity=serial.PARITY_NONE,
-            stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=1
-        )
+        try:
+            self.serial_reader, self.serial_writer = await serial_asyncio.open_serial_connection(
+                url=self.serial_port, baudrate=self.baud_rate, parity=serial.PARITY_NONE,
+                stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=1
+            )
 
-        self.server = await websockets.serve(self.handle_websocket, "0.0.0.0", self.websocket_port)
-        self.running = True
-        logging.info("WebSocket server started.")
-        await self.handle_serial_read()
+            self.server = await websockets.serve(self.handle_websocket, "0.0.0.0", self.websocket_port)
+            self.running = True
+            logging.info("WebSocket server started.")
+            await self.handle_serial_read()
+
+        except serial.serialutil.SerialException as e:
+            error_message = f"Error al abrir el puerto serial: {e}"
+            logging.error(error_message)
+            messagebox.showerror("Error de Puerto Serial", error_message)
+            self.stop()  #detener el servidor si no se pudo abrir el puerto serial.
+
+        except Exception as e:
+            logging.error(f"Error inesperado: {e}", exc_info=True)
+            messagebox.showerror("Error inesperado", f"Ocurrió un error inesperado: {e}")
+            self.stop()
 
     def stop(self):
         self.running = False
@@ -127,7 +139,7 @@ class SerialToWebSocket:
         if self.serial_writer:
             self.serial_writer.close()
         if self.loop and self.loop.is_running():
-            self.loop.call_soon_threadsafe(self.loop.stop)  # Detener el loop desde otro hilo
+            self.loop.call_soon_threadsafe(self.loop.stop)
 
 
 def start_server_in_thread(serial_to_ws):
