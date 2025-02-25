@@ -3,10 +3,10 @@ import websockets
 import serial
 import serial_asyncio
 import logging
-import time
 import customtkinter as ctk
 import serial.tools.list_ports
 import os
+import sys
 import tkinter.messagebox as messagebox
 import threading
 from pystray import Icon, MenuItem, Menu
@@ -19,10 +19,23 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
+
+def resource_path(relative_path):
+    """Obtiene la ruta absoluta a los recursos, funciona para desarrollo y para PyInstaller."""
+    try:
+        # Ruta absoluta al recurso si se ejecuta como un archivo empaquetado
+        base_path = sys._MEIPASS
+    except Exception:
+        # Ruta absoluta al recurso si se ejecuta en desarrollo
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+
 WEBSOCKET_PORT = 8765  # Puerto predeterminado para WebSocket
 MAX_REPEATED_READS = 100
-ICON_PATH_RUNNING = "icons/running.png"
-ICON_PATH_STOPPED = "icons/stopped.png"
+ICON_PATH_RUNNING = resource_path("icons/running.png")
+ICON_PATH_STOPPED = resource_path("icons/stopped.png")
 
 
 class SerialToWebSocket:

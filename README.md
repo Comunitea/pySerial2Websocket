@@ -60,5 +60,58 @@ Interfaz GUI
     deactivate
     ```
 
+## Empaquetado de la aplicación
+
+- **Activar venv y tener requiremnts.txt:**
+- Es recomendable pasar los imports del requirements para asegurar que pyinstaller encuentra
+  todas las dependencias.
+- El archivo ejecutable se encontrará en la carpeta `dist`
+
+
+### Ejecutar PyInstaller Windows (POWERSHELL)
+
+    ```powershell
+    pyinstaller --onefile --noconsole --add-data="icons/*;icons" `
+    --hidden-import websockets `
+    --hidden-import serial `
+    --hidden-import serial_asyncio `
+    --hidden-import customtkinter `
+    --hidden-import pystray `
+    --hidden-import PIL `
+    --hidden-import pillow `
+    pyserial2websocket.py
+    ```
+
+### Ejecutar PyInstaller Windows (CMD)
+
+    ```cmd
+    pyinstaller --onefile --noconsole --add-data="icons/*;icons" ^
+    --hidden-import websockets ^
+    --hidden-import serial ^
+    --hidden-import serial_asyncio ^
+    --hidden-import customtkinter ^
+    --hidden-import pystray ^
+    --hidden-import PIL ^
+    --hidden-import pillow ^
+    pyserial2websocket.py
+    ```
+
+    * El archivo `.exe` se encontrará en la carpeta `dist`.
+
+### Ejecutar PyInstaller Windows (BASH)
+
+    ```bash
+    pyinstaller --onefile --noconsole --add-data="icons/*;icons" `
+    --hidden-import websockets `
+    --hidden-import serial `
+    --hidden-import serial_asyncio `
+    --hidden-import customtkinter `
+    --hidden-import pystray `
+    --hidden-import PIL `
+    --hidden-import pillow `
+    pyserial2websocket.py
+    ```
+
+
 # TODO
 - [ ] Que no salga botón de stop si no conecta..  
