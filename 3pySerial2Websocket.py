@@ -144,8 +144,15 @@ class SerialToWebSocket:
             log_message("WebSocket server stopped.")
         if self.serial_writer:
             self.serial_writer.close()
+
+        # Detener el loop solo si no hay tareas pendientes
         if self.loop and self.loop.is_running():
-            self.loop.call_soon_threadsafe(self.loop.stop)
+            pending_tasks = asyncio.all_tasks(self.loop)
+            if not pending_tasks:  # Verifica si hay tareas pendientes
+                self.loop.stop()
+            else:
+                log_message("Waiting for pending tasks to complete before stopping the loop.")
+
 
 
 def start_server_in_thread(serial_to_ws):
@@ -168,10 +175,20 @@ def start_server(serial_port, websocket_port, log_callback, update_data_callback
 def stop_server(serial_to_ws):
     serial_to_ws.stop()
 
+MAX_LOG_LINES = 100  # Número máximo de líneas que se mantendrán en el campo de log
+
 def log_message(message):
     log_textbox.insert("end", message + "\n")
-    log_textbox.see("end")
+    
+    # Limitar el número de líneas
+    lines = log_textbox.get("1.0", "end-1c").splitlines()
+    if len(lines) > MAX_LOG_LINES:
+        # Eliminar las líneas más antiguas
+        log_textbox.delete("1.0", f"{len(lines) - MAX_LOG_LINES + 1}.0")
+
+    log_textbox.see("end")  # Asegurarse de que siempre se vea el final del texto
     logging.info(message)
+
 
 def update_last_data(data):
     last_data_label.configure(text=f"Last Data: {data}")
