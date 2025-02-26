@@ -2,10 +2,10 @@ websockets
 pyserial
 pyserial-asyncio
 customtkinter
-pystray==0.19.5
-pillow==10.2.0
+pystray
+pillow
 pyinstaller
-pyserial==3.5
-pyserial-asyncio==0.6
+pyserial
+pyserial-asyncio
 pyQt5
 pyQt5-sip

@@ -10,7 +10,7 @@ import sys
 import tkinter.messagebox as messagebox
 import threading
 from pystray import Icon, MenuItem, Menu
-from PIL import Image
+from PIL import Image, ImageTk
 
 
 logging.basicConfig(
@@ -28,7 +28,6 @@ def resource_path(relative_path):
     except Exception:
         # Ruta absoluta al recurso si se ejecuta en desarrollo
         base_path = os.path.abspath(".")
-
     return os.path.join(base_path, relative_path)
 
 
@@ -36,6 +35,8 @@ WEBSOCKET_PORT = 8765  # Puerto predeterminado para WebSocket
 MAX_REPEATED_READS = 100
 ICON_PATH_RUNNING = resource_path("icons/running.png")
 ICON_PATH_STOPPED = resource_path("icons/stopped.png")
+ICON_APP = resource_path("icons/app.ico")
+ICON_APP_PNG = resource_path("icons/app_icon.png")
 
 
 class SerialToWebSocket:
@@ -218,6 +219,15 @@ def tray_exit(icon, item):
 # Configuración de la ventana principal
 root = ctk.CTk()
 root.title("Serial to WebSocket Server")
+
+# argar el icono PNG usando Pillow
+icon_image = Image.open(ICON_APP_PNG)
+icon_photo = ImageTk.PhotoImage(icon_image)
+root.wm_iconphoto(True, icon_photo)
+
+# # Establecer el icono de la ventana principal (en formato PNG)
+# root.iconphoto(ICON_APP)
+
 # Obtener los puertos seriales disponibles
 ports = get_serial_ports()
 # Establecer el puerto predeterminado
