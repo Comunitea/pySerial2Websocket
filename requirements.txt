@@ -9,3 +9,4 @@ pyserial
 pyserial-asyncio
 pyQt5
 pyQt5-sip
+ipdb    

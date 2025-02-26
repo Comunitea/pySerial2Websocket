@@ -40,7 +40,7 @@ ICON_APP_PNG = resource_path("icons/app_icon.png")
 
 
 class SerialToWebSocket:
-    def __init__(self, serial_port, baud_rate, websocket_port, device_id=None):
+    def __init__(self, serial_port, baud_rate, websocket_port, log_callback, update_data_callback, device_id=None):
         self.serial_port = serial_port
         self.baud_rate = baud_rate
         self.websocket_port = websocket_port
@@ -54,6 +54,10 @@ class SerialToWebSocket:
         self.running = False
         self.loop = None  # Guardaremos el loop para controlarlo mejor
 
+        self.log_callback = log_callback
+        self.update_data_callback = update_data_callback
+
+
     async def handle_serial_read(self):
         while self.running:
             try:
@@ -64,10 +68,12 @@ class SerialToWebSocket:
                             self.repeated_count += 1
                             if self.repeated_count <= MAX_REPEATED_READS:
                                 logging.info(f"Sending: {data}")
+                                self.update_data_callback(data.decode("utf-8"))
                                 await self.send_data_to_clients(data)
                         else:
                             self.repeated_count = 0
                             logging.info(f"Sending new: {data}")
+                            self.update_data_callback(data.decode("utf-8"))
                             await self.send_data_to_clients(data)
                             self.last_sent_data = data
             except Exception as e:
@@ -118,7 +124,8 @@ class SerialToWebSocket:
 
             self.server = await websockets.serve(self.handle_websocket, "0.0.0.0", self.websocket_port)
             self.running = True
-            logging.info("WebSocket server started.")
+            # logging.info("WebSocket server started.")
+            self.log_callback("WebSocket server started.")
             await self.handle_serial_read()
 
         except serial.serialutil.SerialException as e:
@@ -153,8 +160,8 @@ def start_server_in_thread(serial_to_ws):
         loop.close()
 
 
-def start_server(serial_port, websocket_port):
-    serial_to_ws = SerialToWebSocket(serial_port, 9600, websocket_port)
+def start_server(serial_port, websocket_port, log_callback, update_data_callback):
+    serial_to_ws = SerialToWebSocket(serial_port, 9600, websocket_port, log_callback, update_data_callback)
     thread = threading.Thread(target=start_server_in_thread, args=(serial_to_ws,), daemon=True)
     thread.start()
     return serial_to_ws
@@ -163,6 +170,13 @@ def start_server(serial_port, websocket_port):
 def stop_server(serial_to_ws):
     serial_to_ws.stop()
 
+def log_message(message):
+    log_textbox.insert("end", message + "\n")
+    log_textbox.see("end")
+    logging.info(message)
+
+def update_last_data(data):
+    last_data_label.configure(text=f"Last Data: {data}")
 
 def start_stop_server():
     global server_instance
@@ -173,10 +187,14 @@ def start_stop_server():
             try:
                 websocket_port = int(websocket_port)
                 start_button.configure(state="disabled", fg_color="green")  # Cambiar a verde
-                logging.info(f"Starting server on serial port {selected_port} and websocket port {websocket_port}...")
-                server_instance = start_server(selected_port, websocket_port)
-                start_button.configure(state="normal", text="Stop Server", fg_color="red")  # Cambiar a rojo
-                tray_icon.icon = Image.open(ICON_PATH_RUNNING)
+                log_message(f"Starting server on {selected_port}, WebSocket {websocket_port}...")
+
+                server_instance = start_server(selected_port, websocket_port, log_message, update_last_data)
+
+                if server_instance.running:
+                    start_button.configure(text="Stop Server")
+                    tray_icon.icon = Image.open(ICON_PATH_RUNNING)
+
             except ValueError:
                 messagebox.showerror("Error", "Invalid WebSocket port.")
                 start_button.configure(state="normal", fg_color="green")  # Restaurar verde si hay error
@@ -184,9 +202,13 @@ def start_stop_server():
             messagebox.showerror("Error", "Please select a serial port and enter a valid WebSocket port.")
             start_button.configure(state="normal", fg_color="green")  # Restaurar verde si hay error
     else:
+        # Deshabilitar el botón mientras se detiene el servidor
+        start_button.configure(state="disabled", fg_color="red")  # Cambiar a rojo
         logging.info("Stopping server...")
         stop_server(server_instance)
-        start_button.configure(text="Start Server", fg_color="green")  # Volver a verde
+        
+        # Volver a habilitar el botón en el hilo principal
+        root.after(0, lambda: start_button.configure(text="Start Server", state="normal", fg_color="green"))
         tray_icon.icon = Image.open(ICON_PATH_STOPPED)
 
 
@@ -247,13 +269,18 @@ websocket_port_entry.grid(row=1, column=1, padx=10, pady=10)
 # logs_entry = ctk.CTkEntry(root, width=400, height=200, state="readonly")
 # logs_entry.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
 
-# # Entry para mostrar el último dato
+# Entry para mostrar el último dato
 # last_data_entry = ctk.CTkEntry(root, width=200)
 # last_data_entry.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
 
 start_button = ctk.CTkButton(
     root, text="Start Server", command=start_stop_server, fg_color="green")
 start_button.grid(row=4, column=0, columnspan=2, pady=20)
+
+last_data_label = ctk.CTkLabel(root, text="Last Data: ")
+last_data_label.grid(row=5, column=0, columnspan=2, pady=5)
+log_textbox = ctk.CTkTextbox(root, width=400, height=150)
+log_textbox.grid(row=6, column=0, columnspan=2, pady=5)
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
