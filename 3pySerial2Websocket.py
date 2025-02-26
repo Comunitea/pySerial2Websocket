@@ -187,14 +187,11 @@ def start_stop_server():
                 start_button.configure(state="disabled", fg_color="green")  # Cambiar a verde
                 log_message(f"Starting server on {selected_port}, WebSocket {websocket_port}...")
 
+                # Iniciar el servidor en un hilo
                 server_instance = start_server(selected_port, websocket_port, log_message, update_last_data)
 
-                # if server_instance.running:
-                #     start_button.configure(text="Stop Server")
-                #     tray_icon.icon = Image.open(ICON_PATH_RUNNING)
-                start_button.configure(text="Stop Server")
-                tray_icon.icon = Image.open(ICON_PATH_RUNNING)
-
+                # Usar after para actualizar el botón y el ícono en el hilo principal
+                root.after(0, lambda: update_ui_on_start())
             except ValueError:
                 messagebox.showerror("Error", "Invalid WebSocket port.")
                 start_button.configure(state="normal", fg_color="green")  # Restaurar verde si hay error
@@ -206,10 +203,17 @@ def start_stop_server():
         start_button.configure(state="disabled", fg_color="red")  # Cambiar a rojo
         log_message("Stopping server...")
         stop_server(server_instance)
-        
+
         # Volver a habilitar el botón en el hilo principal
-        root.after(0, lambda: start_button.configure(text="Start Server", state="normal", fg_color="green"))
-        tray_icon.icon = Image.open(ICON_PATH_STOPPED)
+        root.after(0, lambda: update_ui_on_stop())
+
+def update_ui_on_start():
+    start_button.configure(text="Stop Server", state="normal", fg_color="red")
+    tray_icon.icon = Image.open(ICON_PATH_RUNNING)
+
+def update_ui_on_stop():
+    start_button.configure(text="Start Server", state="normal", fg_color="green")
+    tray_icon.icon = Image.open(ICON_PATH_STOPPED)
 
 
 def on_closing():
