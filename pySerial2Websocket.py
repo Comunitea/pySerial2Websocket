@@ -33,6 +33,7 @@ def resource_path(relative_path):
 
 WEBSOCKET_PORT = 8765  # Puerto predeterminado para WebSocket
 MAX_REPEATED_READS = 100
+MAX_LOG_LINES = 100  # Número máximo de líneas que se mantendrán en el campo de log
 ICON_PATH_RUNNING = resource_path("icons/running.png")
 ICON_PATH_STOPPED = resource_path("icons/stopped.png")
 ICON_APP = resource_path("icons/app.ico")
@@ -40,7 +41,7 @@ ICON_APP_PNG = resource_path("icons/app_icon.png")
 
 
 class SerialToWebSocket:
-    def __init__(self, serial_port, baud_rate, websocket_port, device_id=None):
+    def __init__(self, serial_port, baud_rate, websocket_port, log_callback, update_data_callback, device_id=None):
         self.serial_port = serial_port
         self.baud_rate = baud_rate
         self.websocket_port = websocket_port
@@ -54,20 +55,24 @@ class SerialToWebSocket:
         self.running = False
         self.loop = None  # Guardaremos el loop para controlarlo mejor
 
+        self.log_callback = log_callback
+        self.update_data_callback = update_data_callback
+
     async def handle_serial_read(self):
         while self.running:
             try:
                 data = await self.serial_reader.readuntil(b'\r')
                 if data:
+                    self.update_data_callback(data.decode("utf-8"))
                     if self.websocket_clients:
                         if data == self.last_sent_data:
                             self.repeated_count += 1
                             if self.repeated_count <= MAX_REPEATED_READS:
-                                logging.info(f"Sending: {data}")
+                                log_message(f"Sending: {data}")
                                 await self.send_data_to_clients(data)
                         else:
                             self.repeated_count = 0
-                            logging.info(f"Sending new: {data}")
+                            log_message(f"Sending new: {data}")
                             await self.send_data_to_clients(data)
                             self.last_sent_data = data
             except Exception as e:
@@ -76,31 +81,31 @@ class SerialToWebSocket:
     async def send_data_to_clients(self, data):
         if self.websocket_clients:
             if len(self.websocket_clients) > 1:
-                logging.info(f"Sending data to {len(self.websocket_clients)} clients")
+                log_message(f"Sending data to {len(self.websocket_clients)} clients")
             await asyncio.gather(*(client.send(data) for client in self.websocket_clients))
 
     async def handle_websocket(self, websocket):
         self.websocket_clients.add(websocket)
-        logging.info("New WebSocket client connected.")
+        log_message("New WebSocket client connected.")
 
         self.repeated_count = 0
         if self.last_sent_data:
-            logging.info(f"Resending last data: {self.last_sent_data}")
+            log_message(f"Resending last data: {self.last_sent_data}")
             await self.send_data_to_clients(self.last_sent_data)
 
         try:
             async for message in websocket:
                 if message == "ping":
                     await websocket.pong()
-                logging.info(f"---Received message---: {message}")
+                log_message(f"---Received message---: {message}")
                 command = self.build_sscar_command(message)
                 self.serial_writer.write(command.encode('utf-8'))
                 await self.serial_writer.drain()
         except websockets.exceptions.ConnectionClosed as e:
-            logging.info(f"WebSocket connection closed: {e}")
+            log_message(f"WebSocket connection closed: {e}")
         finally:
             self.websocket_clients.remove(websocket)
-            logging.info("WebSocket client disconnected.")
+            log_message("WebSocket client disconnected.")
 
     def build_sscar_command(self, message):
         command = message.strip().upper()
@@ -118,7 +123,7 @@ class SerialToWebSocket:
 
             self.server = await websockets.serve(self.handle_websocket, "0.0.0.0", self.websocket_port)
             self.running = True
-            logging.info("WebSocket server started.")
+            self.log_callback("WebSocket server started.")
             await self.handle_serial_read()
 
         except serial.serialutil.SerialException as e:
@@ -142,7 +147,6 @@ class SerialToWebSocket:
         if self.loop and self.loop.is_running():
             self.loop.call_soon_threadsafe(self.loop.stop)
 
-
 def start_server_in_thread(serial_to_ws):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -153,8 +157,8 @@ def start_server_in_thread(serial_to_ws):
         loop.close()
 
 
-def start_server(serial_port, websocket_port):
-    serial_to_ws = SerialToWebSocket(serial_port, 9600, websocket_port)
+def start_server(serial_port, websocket_port, log_callback, update_data_callback):
+    serial_to_ws = SerialToWebSocket(serial_port, 9600, websocket_port, log_callback, update_data_callback)
     thread = threading.Thread(target=start_server_in_thread, args=(serial_to_ws,), daemon=True)
     thread.start()
     return serial_to_ws
@@ -164,6 +168,22 @@ def stop_server(serial_to_ws):
     serial_to_ws.stop()
 
 
+def log_message(message):
+    log_textbox.insert("end", message + "\n")
+    
+    # Limitar el número de líneas
+    lines = log_textbox.get("1.0", "end-1c").splitlines()
+    if len(lines) > MAX_LOG_LINES:
+        # Eliminar las líneas más antiguas
+        log_textbox.delete("1.0", f"{len(lines) - MAX_LOG_LINES + 1}.0")
+
+    log_textbox.see("end")  # Asegurarse de que siempre se vea el final del texto
+    logging.info(message)
+
+
+def update_last_data(data):
+    last_data_label.configure(text=f"Last Data: {data}")
+
 def start_stop_server():
     global server_instance
     if start_button.cget("text") == "Start Server":
@@ -172,13 +192,14 @@ def start_stop_server():
         if selected_port and websocket_port:
             try:
                 websocket_port = int(websocket_port)
-                logging.info(f"Starting server on serial port {selected_port} and websocket port {websocket_port}...")
-                server_instance = start_server(selected_port, websocket_port)
+                log_message(f"Starting server on {selected_port}, WebSocket {websocket_port}...")
+                # Iniciar el servidor en un hilo
+                server_instance = start_server(selected_port, websocket_port, log_message, update_last_data)
                 if server_instance.running:
                     start_button.configure(state="disabled", fg_color="green")  # Cambiar a verde
                     start_button.configure(state="normal", text="Stop Server", fg_color="red")  # Cambiar a rojo
                     tray_icon.icon = Image.open(ICON_PATH_RUNNING)
-
+                # Usar after para actualizar el botón y el ícono en el hilo principal
             except ValueError:
                 messagebox.showerror("Error", "Invalid WebSocket port.")
                 start_button.configure(state="normal", fg_color="green")  # Restaurar verde si hay error
@@ -186,15 +207,18 @@ def start_stop_server():
             messagebox.showerror("Error", "Please select a serial port and enter a valid WebSocket port.")
             start_button.configure(state="normal", fg_color="green")  # Restaurar verde si hay error
     else:
-        logging.info("Stopping server...")
+        # Deshabilitar el botón mientras se detiene el servidor
+        start_button.configure(state="disabled", fg_color="red")  # Cambiar a rojo
+        log_message("Stopping server...")
         stop_server(server_instance)
+        # Volver a habilitar el botón en el hilo principal
         start_button.configure(text="Start Server", fg_color="green")  # Volver a verde
         tray_icon.icon = Image.open(ICON_PATH_STOPPED)
 
 
 def on_closing():
     if messagebox.askokcancel("Quit", "Do you want to quit?"):
-        logging.info("Window closed, stopping server.")
+        log_message("Window closed, stopping server.")
         if server_instance:
             stop_server(server_instance)
         root.quit()
@@ -245,17 +269,14 @@ websocket_port_entry = ctk.CTkEntry(root, width=200)
 websocket_port_entry.insert(0, str(WEBSOCKET_PORT))
 websocket_port_entry.grid(row=1, column=1, padx=10, pady=10)
 
-# Entry para mostrar logs
-# logs_entry = ctk.CTkEntry(root, width=400, height=200, state="readonly")
-# logs_entry.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
-
-# # Entry para mostrar el último dato
-# last_data_entry = ctk.CTkEntry(root, width=200)
-# last_data_entry.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
-
 start_button = ctk.CTkButton(
     root, text="Start Server", command=start_stop_server, fg_color="green")
 start_button.grid(row=4, column=0, columnspan=2, pady=20)
+
+last_data_label = ctk.CTkLabel(root, text="Last Data: ")
+last_data_label.grid(row=5, column=0, columnspan=2, pady=5)
+log_textbox = ctk.CTkTextbox(root, width=400, height=150)
+log_textbox.grid(row=6, column=0, columnspan=2, pady=5)
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
