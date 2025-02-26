@@ -63,17 +63,16 @@ class SerialToWebSocket:
             try:
                 data = await self.serial_reader.readuntil(b'\r')
                 if data:
+                    self.update_data_callback(data.decode("utf-8"))
                     if self.websocket_clients:
                         if data == self.last_sent_data:
                             self.repeated_count += 1
                             if self.repeated_count <= MAX_REPEATED_READS:
-                                logging.info(f"Sending: {data}")
-                                self.update_data_callback(data.decode("utf-8"))
+                                log_message(f"Sending: {data}")
                                 await self.send_data_to_clients(data)
                         else:
                             self.repeated_count = 0
-                            logging.info(f"Sending new: {data}")
-                            self.update_data_callback(data.decode("utf-8"))
+                            log_message(f"Sending new: {data}")
                             await self.send_data_to_clients(data)
                             self.last_sent_data = data
             except Exception as e:
@@ -82,31 +81,31 @@ class SerialToWebSocket:
     async def send_data_to_clients(self, data):
         if self.websocket_clients:
             if len(self.websocket_clients) > 1:
-                logging.info(f"Sending data to {len(self.websocket_clients)} clients")
+                log_message(f"Sending data to {len(self.websocket_clients)} clients")
             await asyncio.gather(*(client.send(data) for client in self.websocket_clients))
 
     async def handle_websocket(self, websocket):
         self.websocket_clients.add(websocket)
-        logging.info("New WebSocket client connected.")
+        log_message("New WebSocket client connected.")
 
         self.repeated_count = 0
         if self.last_sent_data:
-            logging.info(f"Resending last data: {self.last_sent_data}")
+            log_message(f"Resending last data: {self.last_sent_data}")
             await self.send_data_to_clients(self.last_sent_data)
 
         try:
             async for message in websocket:
                 if message == "ping":
                     await websocket.pong()
-                logging.info(f"---Received message---: {message}")
+                log_message(f"---Received message---: {message}")
                 command = self.build_sscar_command(message)
                 self.serial_writer.write(command.encode('utf-8'))
                 await self.serial_writer.drain()
         except websockets.exceptions.ConnectionClosed as e:
-            logging.info(f"WebSocket connection closed: {e}")
+            log_message(f"WebSocket connection closed: {e}")
         finally:
             self.websocket_clients.remove(websocket)
-            logging.info("WebSocket client disconnected.")
+            log_message("WebSocket client disconnected.")
 
     def build_sscar_command(self, message):
         command = message.strip().upper()
@@ -124,7 +123,6 @@ class SerialToWebSocket:
 
             self.server = await websockets.serve(self.handle_websocket, "0.0.0.0", self.websocket_port)
             self.running = True
-            # logging.info("WebSocket server started.")
             self.log_callback("WebSocket server started.")
             await self.handle_serial_read()
 
@@ -143,7 +141,7 @@ class SerialToWebSocket:
         self.running = False
         if self.server:
             self.server.close()
-            logging.info("WebSocket server stopped.")
+            log_message("WebSocket server stopped.")
         if self.serial_writer:
             self.serial_writer.close()
         if self.loop and self.loop.is_running():
@@ -191,9 +189,11 @@ def start_stop_server():
 
                 server_instance = start_server(selected_port, websocket_port, log_message, update_last_data)
 
-                if server_instance.running:
-                    start_button.configure(text="Stop Server")
-                    tray_icon.icon = Image.open(ICON_PATH_RUNNING)
+                # if server_instance.running:
+                #     start_button.configure(text="Stop Server")
+                #     tray_icon.icon = Image.open(ICON_PATH_RUNNING)
+                start_button.configure(text="Stop Server")
+                tray_icon.icon = Image.open(ICON_PATH_RUNNING)
 
             except ValueError:
                 messagebox.showerror("Error", "Invalid WebSocket port.")
@@ -204,7 +204,7 @@ def start_stop_server():
     else:
         # Deshabilitar el botón mientras se detiene el servidor
         start_button.configure(state="disabled", fg_color="red")  # Cambiar a rojo
-        logging.info("Stopping server...")
+        log_message("Stopping server...")
         stop_server(server_instance)
         
         # Volver a habilitar el botón en el hilo principal
@@ -214,7 +214,7 @@ def start_stop_server():
 
 def on_closing():
     if messagebox.askokcancel("Quit", "Do you want to quit?"):
-        logging.info("Window closed, stopping server.")
+        log_message("Window closed, stopping server.")
         if server_instance:
             stop_server(server_instance)
         root.quit()
