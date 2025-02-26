@@ -172,11 +172,13 @@ def start_stop_server():
         if selected_port and websocket_port:
             try:
                 websocket_port = int(websocket_port)
-                start_button.configure(state="disabled", fg_color="green")  # Cambiar a verde
                 logging.info(f"Starting server on serial port {selected_port} and websocket port {websocket_port}...")
                 server_instance = start_server(selected_port, websocket_port)
-                start_button.configure(state="normal", text="Stop Server", fg_color="red")  # Cambiar a rojo
-                tray_icon.icon = Image.open(ICON_PATH_RUNNING)
+                if server_instance.running:
+                    start_button.configure(state="disabled", fg_color="green")  # Cambiar a verde
+                    start_button.configure(state="normal", text="Stop Server", fg_color="red")  # Cambiar a rojo
+                    tray_icon.icon = Image.open(ICON_PATH_RUNNING)
+
             except ValueError:
                 messagebox.showerror("Error", "Invalid WebSocket port.")
                 start_button.configure(state="normal", fg_color="green")  # Restaurar verde si hay error
