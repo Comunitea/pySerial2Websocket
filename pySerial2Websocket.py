@@ -163,17 +163,6 @@ def start_server(serial_port, websocket_port):
 def stop_server(serial_to_ws):
     serial_to_ws.stop()
 
-
-def get_serial_ports():
-    
-    if os.name == 'posix':  # Linux
-        return [port.device for port in serial.tools.list_ports.comports() if 'ttyUSB' in port.device]
-    elif os.name == 'nt':  # Windows
-        return [port.device for port in serial.tools.list_ports.comports() if 'COM' in port.device]
-    else:
-        return []  # No support for other OS
-
-
 def start_stop_server():
     global server_instance
     if start_button.cget("text") == "Start Server":
@@ -182,21 +171,21 @@ def start_stop_server():
         if selected_port and websocket_port:
             try:
                 websocket_port = int(websocket_port)
-                start_button.configure(state="disabled")  # Deshabilitar temporalmente
+                start_button.configure(state="disabled", fg_color="green")  # Cambiar a verde
                 logging.info(f"Starting server on serial port {selected_port} and websocket port {websocket_port}...")
                 server_instance = start_server(selected_port, websocket_port)
-                start_button.configure(state="normal", text="Stop Server")  # Habilitar y cambiar texto
+                start_button.configure(state="normal", text="Stop Server", fg_color="red")  # Cambiar a rojo
                 tray_icon.icon = Image.open(ICON_PATH_RUNNING)
             except ValueError:
                 messagebox.showerror("Error", "Invalid WebSocket port.")
-                start_button.configure(state="normal")  # Restaurar si hay error
+                start_button.configure(state="normal", fg_color="green")  # Restaurar verde si hay error
         else:
             messagebox.showerror("Error", "Please select a serial port and enter a valid WebSocket port.")
-            start_button.configure(state="normal")  # Restaurar si hay error
+            start_button.configure(state="normal", fg_color="green")  # Restaurar verde si hay error
     else:
         logging.info("Stopping server...")
         stop_server(server_instance)
-        start_button.configure(text="Start Server")  # Cambiar texto inmediatamente
+        start_button.configure(text="Start Server", fg_color="green")  # Volver a verde
         tray_icon.icon = Image.open(ICON_PATH_STOPPED)
 
 
@@ -215,7 +204,14 @@ def tray_toggle_server(icon, item):
 def tray_exit(icon, item):
     root.after(0, on_closing)
 
-
+def get_serial_ports():
+    if os.name == 'posix':  # Linux
+        return [port.device for port in serial.tools.list_ports.comports() if 'ttyUSB' in port.device]
+    elif os.name == 'nt':  # Windows
+        return [port.device for port in serial.tools.list_ports.comports() if 'COM' in port.device]
+    else:
+        return []  # No support for other OS
+    
 # Configuración de la ventana principal
 root = ctk.CTk()
 root.title("Serial to WebSocket Server")
@@ -224,9 +220,6 @@ root.title("Serial to WebSocket Server")
 icon_image = Image.open(ICON_APP_PNG)
 icon_photo = ImageTk.PhotoImage(icon_image)
 root.wm_iconphoto(True, icon_photo)
-
-# # Establecer el icono de la ventana principal (en formato PNG)
-# root.iconphoto(ICON_APP)
 
 # Obtener los puertos seriales disponibles
 ports = get_serial_ports()
@@ -249,9 +242,17 @@ websocket_port_entry = ctk.CTkEntry(root, width=200)
 websocket_port_entry.insert(0, str(WEBSOCKET_PORT))
 websocket_port_entry.grid(row=1, column=1, padx=10, pady=10)
 
+# Entry para mostrar logs
+logs_entry = ctk.CTkEntry(root, width=400, height=200, state="readonly")
+logs_entry.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
+
+# Entry para mostrar el último dato
+last_data_entry = ctk.CTkEntry(root, width=200)
+last_data_entry.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+
 start_button = ctk.CTkButton(
-    root, text="Start Server", command=start_stop_server)
-start_button.grid(row=2, column=0, columnspan=2, pady=20)
+    root, text="Start Server", command=start_stop_server, fg_color="green")
+start_button.grid(row=4, column=0, columnspan=2, pady=20)
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
