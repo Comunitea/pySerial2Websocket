@@ -78,7 +78,7 @@ class SerialToWebSocket:
                 logging.info(f"Sending data to {len(self.websocket_clients)} clients")
             await asyncio.gather(*(client.send(data) for client in self.websocket_clients))
 
-    async def handle_websocket(self, websocket, path):
+    async def handle_websocket(self, websocket):
         self.websocket_clients.add(websocket)
         logging.info("New WebSocket client connected.")
 

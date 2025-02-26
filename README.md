@@ -5,7 +5,7 @@ Interfaz GUI
 
 ## Requisitos Despliegue
 
-* Python 3.10+
+* Python 3.12+
 * pip
 
 ## Instalación
@@ -42,15 +42,13 @@ Interfaz GUI
     ```
 
 ## Uso
-1.  **Ejecuta la aplicación:**
+**Ejecuta la aplicación:**
 
-    ```bash
-    python pyserial2websocket.py
-    ```
+```bash
+python pyserial2websocket.py
+```
 
-2.  **Accede a los datos a través de WebSocket:**
 
-    * Abre un navegador web y conéctate a `ws://localhost:8765`.
 
 ## Desactivación del entorno virtual
 
@@ -101,16 +99,11 @@ Interfaz GUI
 ### Ejecutar PyInstaller Windows (BASH)
 
     ```bash
-    pyinstaller --onefile --noconsole --add-data="icons/*;icons" `
-    --hidden-import websockets `
-    --hidden-import serial `
-    --hidden-import serial_asyncio `
-    --hidden-import customtkinter `
-    --hidden-import pystray `
-    --hidden-import PIL `
-    --hidden-import pillow `
-    pyserial2websocket.py
+    pyinstaller --onefile --noconsole --add-data="icons/*:icons" --hidden-import websockets --hidden-import serial --hidden-import serial_asyncio --hidden-import customtkinter --hidden-import pystray --hidden-import PIL --hidden-import pillow pySerial2Websocket.py
     ```
+
+# PROBLEMAS:
+- Dentro del venv los iconos de la bandeja del sistema no funcionan..
 
 
 # TODO
