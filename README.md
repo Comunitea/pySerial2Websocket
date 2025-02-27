@@ -99,12 +99,19 @@ python pyserial2websocket.py
 ### Ejecutar PyInstaller Windows (BASH)
 
     ```bash
-    pyinstaller --onefile --noconsole --add-data="icons/*:icons" --hidden-import websockets --hidden-import serial --hidden-import serial_asyncio --hidden-import customtkinter --hidden-import pystray --hidden-import PIL --hidden-import pillow pySerial2Websocket.py
+    pyinstaller \
+  --onefile \
+  --noconsole \
+  --add-data="icons/*:icons" \
+  --hidden-import=websockets \
+  --hidden-import=serial \
+  --hidden-import=serial_asyncio \
+  --hidden-import=customtkinter \
+  --hidden-import=pystray \
+  --hidden-import=PIL \
+  --hidden-import=pillow \
+  pySerial2Websocket.py
     ```
 
 # PROBLEMAS:
 - Dentro del venv los iconos de la bandeja del sistema no funcionan..
-
-
-# TODO
-- [ ] Que no salga botón de stop si no conecta..  
