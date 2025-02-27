@@ -64,6 +64,7 @@ python pyserial2websocket.py
 - Es recomendable pasar los imports del requirements para asegurar que pyinstaller encuentra
   todas las dependencias.
 - El archivo ejecutable se encontrará en la carpeta `dist`
+- En Linux la versión mínima compatible de GLIBC es la 2.39, comprobar con `ldd --version`
 
 
 ### Ejecutar PyInstaller Windows (POWERSHELL)
