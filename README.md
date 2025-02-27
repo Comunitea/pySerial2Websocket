@@ -100,17 +100,19 @@ python pyserial2websocket.py
 
     ```bash
     pyinstaller \
-  --onefile \
-  --noconsole \
-  --add-data="icons/*:icons" \
-  --hidden-import=websockets \
-  --hidden-import=serial \
-  --hidden-import=serial_asyncio \
-  --hidden-import=customtkinter \
-  --hidden-import=pystray \
-  --hidden-import=PIL \
-  --hidden-import=pillow \
-  pySerial2Websocket.py
+    --onefile \
+    --noconsole \
+    --add-data="icons/*:icons" \
+    --hidden-import=websockets \
+    --hidden-import=serial \
+    --hidden-import=serial_asyncio \
+    --hidden-import=customtkinter \
+    --hidden-import=pystray \
+    --hidden-import=PIL \
+    --hidden-import=pillow \
+    --hidden-import=PIL._tkinter_finder \
+    --icon=icons/app.ico \
+    pySerial2Websocket.py
     ```
 
 # PROBLEMAS:
