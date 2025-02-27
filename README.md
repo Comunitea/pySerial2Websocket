@@ -77,6 +77,7 @@ python pyserial2websocket.py
     --hidden-import pystray `
     --hidden-import PIL `
     --hidden-import pillow `
+    --icon=icons/app.ico `
     pyserial2websocket.py
     ```
 
