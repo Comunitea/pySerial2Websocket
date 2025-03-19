@@ -69,53 +69,53 @@ python pyserial2websocket.py
 
 ### Ejecutar PyInstaller Windows (POWERSHELL)
 
-    ```powershell
-    pyinstaller --onefile --noconsole --add-data="icons/*;icons" `
-    --hidden-import websockets `
-    --hidden-import serial `
-    --hidden-import serial_asyncio `
-    --hidden-import customtkinter `
-    --hidden-import pystray `
-    --hidden-import PIL `
-    --hidden-import pillow `
-    --icon=icons/app.ico `
-    pyserial2websocket.py
-    ```
+ ```powershell
+ pyinstaller --onefile --noconsole --add-data="icons/*;icons" `
+ --hidden-import websockets `
+ --hidden-import serial `
+ --hidden-import serial_asyncio `
+ --hidden-import customtkinter `
+ --hidden-import pystray `
+ --hidden-import PIL `
+ --hidden-import pillow `
+ --icon=icons/app.ico `
+ pyserial2websocket.py
+ ```
 
 ### Ejecutar PyInstaller Windows (CMD)
 
-    ```cmd
-    pyinstaller --onefile --noconsole --add-data="icons/*;icons" ^
-    --hidden-import websockets ^
-    --hidden-import serial ^
-    --hidden-import serial_asyncio ^
-    --hidden-import customtkinter ^
-    --hidden-import pystray ^
-    --hidden-import PIL ^
-    --hidden-import pillow ^
-    pyserial2websocket.py
-    ```
+ ```cmd
+ pyinstaller --onefile --noconsole --add-data="icons/*;icons" ^
+ --hidden-import websockets ^
+ --hidden-import serial ^
+ --hidden-import serial_asyncio ^
+ --hidden-import customtkinter ^
+ --hidden-import pystray ^
+ --hidden-import PIL ^
+ --hidden-import pillow ^
+ pyserial2websocket.py
+ ```
 
-    * El archivo `.exe` se encontrará en la carpeta `dist`.
+ * El archivo `.exe` se encontrará en la carpeta `dist`.
 
 ### Ejecutar PyInstaller Windows (BASH)
 
-    ```bash
-    pyinstaller \
-    --onefile \
-    --noconsole \
-    --add-data="icons/*:icons" \
-    --hidden-import=websockets \
-    --hidden-import=serial \
-    --hidden-import=serial_asyncio \
-    --hidden-import=customtkinter \
-    --hidden-import=pystray \
-    --hidden-import=PIL \
-    --hidden-import=pillow \
-    --hidden-import=PIL._tkinter_finder \
-    --icon=icons/app.ico \
-    pySerial2Websocket.py
-    ```
+ ```bash
+ pyinstaller \
+ --onefile \
+ --noconsole \
+ --add-data="icons/*:icons" \
+ --hidden-import=websockets \
+ --hidden-import=serial \
+ --hidden-import=serial_asyncio \
+ --hidden-import=customtkinter \
+ --hidden-import=pystray \
+ --hidden-import=PIL \
+ --hidden-import=pillow \
+ --hidden-import=PIL._tkinter_finder \
+ --icon=icons/app.ico \
+ pySerial2Websocket.py
+ ```
 
 # PROBLEMAS:
 - Dentro del venv los iconos de la bandeja del sistema no funcionan..
