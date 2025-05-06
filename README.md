@@ -98,7 +98,7 @@ python pyserial2websocket.py
 
     * El archivo `.exe` se encontrará en la carpeta `dist`.
 
-### Ejecutar PyInstaller Windows (BASH)
+### Ejecutar PyInstaller Linux (BASH)
 
     ```bash
     pyinstaller \

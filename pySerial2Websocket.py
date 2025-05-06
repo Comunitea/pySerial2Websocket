@@ -153,27 +153,29 @@ class SerialToWebSocket:
         self.running = False
         if self.server:
             self.server.close()
-            log_message("Servidor websocket parado.")
+            self.loop.call_soon_threadsafe(
+                asyncio.create_task, self.server.wait_closed())
         if self.serial_writer:
             self.serial_writer.close()
-
-        # Detener el loop solo si no hay tareas pendientes
-        if self.loop and self.loop.is_running():
-            pending_tasks = asyncio.all_tasks(self.loop)
-            if not pending_tasks:  # Verifica si hay tareas pendientes
-                self.loop.stop()
-            # else:
-            #     log_message("Esperando a que se completen tareas del loop.")
+        self.loop.call_soon_threadsafe(self.loop.stop)
 
 
 def start_server_in_thread(serial_to_ws):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    serial_to_ws.loop = loop  # Guardamos el loop en la instancia
+    serial_to_ws.loop = loop
+
+    async def start_all():
+        await serial_to_ws.main()
+        log_message("Tarea main() terminada.")
+
     try:
-        loop.run_until_complete(serial_to_ws.main())
+        loop.create_task(start_all())
+        loop.run_forever()
     finally:
+        log_message("Cerrando loop asyncio.")
         loop.close()
+
 
 
 def start_server(serial_port, websocket_port, 
@@ -323,8 +325,6 @@ start_stop_button.grid(row=4, column=0, columnspan=2, pady=20)
 
 last_data_label = ctk.CTkLabel(root, text="Last Data: ")
 last_data_label.grid(row=5, column=0, columnspan=2, pady=5)
-log_textbox = ctk.CTkTextbox(root, width=400, height=150)
-log_textbox.grid(row=6, column=0, columnspan=2, pady=5)
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
