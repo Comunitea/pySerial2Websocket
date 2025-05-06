@@ -326,6 +326,15 @@ start_stop_button.grid(row=4, column=0, columnspan=2, pady=20)
 last_data_label = ctk.CTkLabel(root, text="Last Data: ")
 last_data_label.grid(row=5, column=0, columnspan=2, pady=5)
 
+# Ajustamos el grid para que el Textbox sea responsivo
+log_textbox = ctk.CTkTextbox(root)
+log_textbox.grid(row=6, column=0, columnspan=2, pady=5, sticky="nsew")
+
+# Configurar las filas y columnas para que sean expansibles
+root.grid_rowconfigure(6, weight=1)  # Hacer que la fila del log sea expansible
+root.grid_columnconfigure(0, weight=1)
+root.grid_columnconfigure(1, weight=1)
+
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
 # Crear la instancia de SerialToWebSocket antes de la interfaz gráfica
