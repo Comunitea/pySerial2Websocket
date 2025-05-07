@@ -190,7 +190,13 @@ def start_server(serial_port, websocket_port,
 
 
 def stop_server(serial_to_ws):
-    serial_to_ws.stop()
+    if serial_to_ws:
+        try:
+            serial_to_ws.stop()
+            # Dar un poco de tiempo para que se detenga el servidor
+            logging.info("Esperando que el servidor se detenga...")
+        except Exception as e:
+            logging.error(f"Error al detener el servidor: {e}")
 
 
 def log_message(message):
@@ -264,11 +270,24 @@ def update_ui_on_stop():
 
 def on_closing():
     if messagebox.askokcancel("Salir", "¿Estás seguro de que deseas cerrar la aplicación?"):
-        log_message("Ventana cerrada, parando servidor.")
+        log_message("Ventana cerrada, parando servidor...")
+        
+        # Detener servidor si está activo
         if server_instance:
             stop_server(server_instance)
-        tray_icon.stop()  # Cierra el icono de bandeja del sistema
-        root.destroy()    # Asegura cierre completo de la ventana
+        
+        # Detener el icono de bandeja
+        try:
+            tray_icon.stop()
+        except Exception as e:
+            logging.error(f"Error al detener icono de bandeja: {e}")
+        
+        # Destruir la ventana principal
+        root.destroy()
+        
+        # Forzar cierre si es necesario
+        logging.info("Aplicación cerrada correctamente")
+        os._exit(0)  # Forzar cierre completo
 
 
 
@@ -277,7 +296,17 @@ def tray_toggle_server(icon, item):
 
 
 def tray_exit(icon, item):
-    root.after(0, on_closing)
+    # Detener el propio icono primero
+    icon.stop()
+    # Luego proceder con el cierre normal
+    root.after(0, lambda: force_exit())
+    
+def force_exit():
+    log_message("Saliendo desde icono de sistema, parando servidor...")
+    if server_instance:
+        stop_server(server_instance)
+    root.destroy()
+    os._exit(0)
 
 
 def get_serial_ports():
