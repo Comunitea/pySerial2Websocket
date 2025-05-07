@@ -157,7 +157,8 @@ class SerialToWebSocket:
                 asyncio.create_task, self.server.wait_closed())
         if self.serial_writer:
             self.serial_writer.close()
-        self.loop.call_soon_threadsafe(self.loop.stop)
+        if self.loop.is_running():
+             self.loop.call_soon_threadsafe(self.loop.stop)
 
 
 def start_server_in_thread(serial_to_ws):
@@ -262,12 +263,13 @@ def update_ui_on_stop():
 
 
 def on_closing():
-    if messagebox.askokcancel(
-            "Salir", "Estas seguro de que deseas cerrar la aplicación?"):
+    if messagebox.askokcancel("Salir", "¿Estás seguro de que deseas cerrar la aplicación?"):
         log_message("Ventana cerrada, parando servidor.")
         if server_instance:
             stop_server(server_instance)
-        root.quit()
+        tray_icon.stop()  # Cierra el icono de bandeja del sistema
+        root.destroy()    # Asegura cierre completo de la ventana
+
 
 
 def tray_toggle_server(icon, item):
