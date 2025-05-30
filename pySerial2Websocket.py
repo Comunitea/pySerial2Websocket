@@ -83,12 +83,15 @@ class SerialToWebSocket:
                 logging.error(f"Error leyendo del puerto de serie: {e}")
 
     async def send_data_to_clients(self, data):
-        if self.websocket_clients:
-            if len(self.websocket_clients) > 1:
-                log_message(
-                    f"Enviando datos a {len(self.websocket_clients)} clientes")
-            await asyncio.gather(
-                *(client.send(data) for client in self.websocket_clients))
+        # Hacer una copia para evitar errores si un cliente se desconecta durante el envío
+        clients_copy = set(self.websocket_clients)
+        for client in clients_copy:
+            try:
+                log_message(f"Enviando datos {len(clients_copy)} clientes: {data}")
+                await client.send(data)
+            except websockets.exceptions.ConnectionClosed:
+                self.websocket_clients.discard(client)
+                log_message("Cliente websocket eliminado por desconexión.")
 
     async def handle_websocket(self, websocket):
         self.websocket_clients.add(websocket)
@@ -110,7 +113,7 @@ class SerialToWebSocket:
         except websockets.exceptions.ConnectionClosed as e:
             log_message(f"Conexión websocket cerrada: {e}")
         finally:
-            self.websocket_clients.remove(websocket)
+            self.websocket_clients.discard(websocket)
             log_message("Cliente websocket desconectado.")
 
     def build_sscar_command(self, message):
